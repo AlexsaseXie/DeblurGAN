@@ -50,6 +50,9 @@ for i, data in enumerate(dataset):
 if opt.dataset_mode != 'single':	
 	avgPSNR /= counter
 	avgSSIM /= counter
+	with open(os.path.join(opt.results_dir, opt.name, 'test_latest', 'result.txt'),'w') as f:
+		f.write('PSNR = %f\n' % avgPSNR)
+		f.write('SSIM = %f\n' % avgSSIM)
 	print('PSNR = %f, SSIM = %f' %
 				  (avgPSNR, avgSSIM))
 

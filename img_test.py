@@ -7,7 +7,7 @@ from util.visualizer import Visualizer
 from pdb import set_trace as st
 from util import html
 from util.metrics import PSNR
-#from ssim import SSIM
+from ssim import SSIM
 from PIL import Image
 import numpy as np
 from collections import OrderedDict
@@ -37,8 +37,6 @@ for i, data in enumerate(dataset):
     img_width = data['A'].shape[2]
     img_height = data['A'].shape[3]
 
-    print(img_width, img_height)
-
     img = np.zeros((img_width, img_height, 3), int)
     area_count = np.zeros((img_width, img_height), int)
 
@@ -64,8 +62,6 @@ for i, data in enumerate(dataset):
             model.test()
             visuals = model.get_current_visuals()
 
-            print(visuals['fake_B'].shape)
-
             img[w_s:w_s+img_s, h_s:h_s+img_s, :] += visuals['fake_B'].astype(int)
 
             if (w_s + img_s >= img_width):
@@ -79,13 +75,28 @@ for i, data in enumerate(dataset):
     img[:,:,0] = img[:,:,0] / area_count
     img[:,:,1] = img[:,:,1] / area_count
     img[:,:,2] = img[:,:,2] / area_count
+
+    fake_B = img.astype(np.uint8)
+    if opt.dataset_mode != 'single':
+        real_B = util.tensor2im(data['B'])
+
+        avgPSNR += PSNR(fake_B,real_B)
+        pilFake = Image.fromarray(fake_B)
+        pilReal = Image.fromarray(real_B)
+        avgSSIM += SSIM(pilFake).cw_ssim_value(pilReal)
+
     img_path = model.get_image_paths()
     print('process image... %s' % img_path)
-    visualizer.save_images(webpage, OrderedDict([('real_A', util.tensor2im(data['A'])),('fake_B', img.astype(np.uint8))]), img_path)
+    visualizer.save_images(webpage, OrderedDict([('real_A', util.tensor2im(data['A'])),('fake_B', fake_B)]), img_path)
 	
-#avgPSNR /= counter
-#avgSSIM /= counter
-#print('PSNR = %f, SSIM = %f' %
-#				  (avgPSNR, avgSSIM))
+if opt.dataset_mode != 'single':	
+    avgPSNR /= counter
+    avgSSIM /= counter
+    with open(os.path.join(opt.results_dir, opt.name, 'test_latest', 'result.txt'),'w') as f:
+        f.write('PSNR = %f\n' % avgPSNR)
+        f.write('SSIM = %f\n' % avgSSIM)
+    print('PSNR = %f, SSIM = %f' %
+    			  (avgPSNR, avgSSIM))
+
 
 webpage.save()
