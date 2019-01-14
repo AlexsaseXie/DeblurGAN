@@ -7,8 +7,9 @@ from util.visualizer import Visualizer
 from pdb import set_trace as st
 from util import html
 from util.metrics import PSNR
-#from ssim import SSIM
+from ssim import SSIM
 from PIL import Image
+import util.util as util
 
 opt = TestOptions().parse()
 opt.nThreads = 1   # test code only supports nThreads = 1
@@ -35,17 +36,21 @@ for i, data in enumerate(dataset):
 	model.set_input(data)
 	model.test()
 	visuals = model.get_current_visuals()
-	#avgPSNR += PSNR(visuals['fake_B'],visuals['real_B'])
-	#pilFake = Image.fromarray(visuals['fake_B'])
-	#pilReal = Image.fromarray(visuals['real_B'])
-	#avgSSIM += SSIM(pilFake).cw_ssim_value(pilReal)
+	if opt.dataset_mode != 'single':
+		real_B = util.tensor2im(data['B'])
+
+		avgPSNR += PSNR(visuals['fake_B'],real_B)
+		pilFake = Image.fromarray(visuals['fake_B'])
+		pilReal = Image.fromarray(real_B)
+		avgSSIM += SSIM(pilFake).cw_ssim_value(pilReal)
 	img_path = model.get_image_paths()
 	print('process image... %s' % img_path)
 	visualizer.save_images(webpage, visuals, img_path)
-	
-#avgPSNR /= counter
-#avgSSIM /= counter
-#print('PSNR = %f, SSIM = %f' %
-#				  (avgPSNR, avgSSIM))
+
+if opt.dataset_mode != 'single':	
+	avgPSNR /= counter
+	avgSSIM /= counter
+	print('PSNR = %f, SSIM = %f' %
+				  (avgPSNR, avgSSIM))
 
 webpage.save()
