@@ -84,7 +84,7 @@ class GoProDataset(BaseDataset):
             A_img = A_img[:, h_offset:h_offset + self.opt.fineSize,
                         w_offset:w_offset + self.opt.fineSize]
             B_img = B_img[:, h_offset:h_offset + self.opt.fineSize,
-                        w + w_offset:w + w_offset + self.opt.fineSize]
+                        w_offset:w_offset + self.opt.fineSize]
 
         return {'A': A_img, 'B': B_img,
                 'A_paths': A_path, 'B_paths': B_path}
